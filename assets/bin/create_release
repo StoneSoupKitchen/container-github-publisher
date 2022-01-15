@@ -1,0 +1,260 @@
+#!/usr/bin/env bash
+#
+#/////////////////////////////////////////////////////////////////////////////#
+#
+# Copyright (c) 2022, Joshua Ford
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+#/////////////////////////////////////////////////////////////////////////////#
+#
+set -Eeuo pipefail
+trap cleanup SIGINT SIGTERM ERR EXIT
+
+# main
+#
+# Performs the primary ("main") function of this script.
+#
+main()
+{
+  check_environment
+
+  g_project_url="https://github.com/${GITHUB_REPOSITORY}"
+  g_project_push_url="https://${GH_API_TOKEN}:@github.com/${GITHUB_REPOSITORY}.git"
+
+  configure_git
+  fetch_latest_tag
+  calculate_next_version
+  generate_changelog
+  commit_changelog
+  publish_release
+
+  exit 0
+}
+
+# cleanup
+#
+# Cleans up any temporary data, lockfiles, or dangling processes.
+#
+cleanup()
+{
+  trap - SIGINT SIGTERM ERR EXIT
+
+  rm -f "${g_commit_message_file}"
+}
+
+# msg
+#
+# Prints a message to STDOUT and STDERR.
+#
+# $1 is the string to print.
+#
+msg()
+{
+  echo >&2 -e "${1-}"
+}
+
+# die
+#
+# Prints an error message and halts the script.
+#
+# $1 is the message to print.
+# $2 is the error code the script will return on exit.
+#
+die()
+{
+  local msg=$1
+  local code=${2-1} # default exit status 1
+  msg "$msg"
+  exit "$code"
+}
+
+# check_environment
+#
+# Checks to see if all variables needed to run the script are set.
+# If a variable is not set, this function will print an error message and exit.
+#
+check_environment()
+{
+  msg 'Checking environment variables'
+  if [ -z ${GITHUB_REPOSITORY+x} ]; then
+    die 'ERROR: Variable GITHUB_REPOSITORY is not set!'
+  fi
+
+  if [ -z ${GH_API_TOKEN+x} ]; then
+    die 'ERROR: Variable GH_API_TOKEN is not set!'
+  fi
+
+  if [ -z ${GITHUB_SHA+x} ]; then
+    die 'ERROR: Variable GITHUB_SHA is not set!'
+  fi
+}
+
+# configure_git
+#
+# Set up local git environment as a service account.
+#
+configure_git()
+{
+  msg 'Configuring git settings'
+  if ! git config --global user.email "${RELEASE_BOT_EMAIL:-noreply@github.com}"; then
+    die 'ERROR: Failed to configure git user.email!'
+  fi
+
+  if ! git config --global user.name "${RELEASE_BOT_USER:-releasebot}"; then
+    die 'ERROR: Failed to configure git user.name!'
+  fi
+}
+
+# fetch_latest_tag
+#
+# Use git semver to pull the latest tag.
+#
+fetch_latest_tag()
+{
+  g_latest_tag="v$(git semver)"
+  if [[ -z "${g_latest_tag}" ]]; then
+    die "ERROR: Unable to retrieve latest tag from git semver!'"
+  fi
+}
+
+# calculate_next_version
+#
+# Parses the git log to determine what the next semver release tag shall be.
+#
+calculate_next_version()
+{
+  local current_sha
+  local git_log
+  local next_semver
+
+  current_sha="${GITHUB_SHA}"
+  git_log="$(git log --format=%B "${g_latest_tag}..${current_sha}")"
+  next_semver='none'
+
+  case "${git_log}" in
+    *"[major]"* )           next_semver=$(git semver --next-major) ;;
+    *"[breaking change]"* ) next_semver=$(git semver --next-major) ;;
+
+    *"[minor]"* )           next_semver=$(git semver --next-minor) ;;
+    *"[feat]"* )            next_semver=$(git semver --next-minor) ;;
+    *"[feature]"* )         next_semver=$(git semver --next-minor) ;;
+
+    *"[patch]"* )           next_semver=$(git semver --next-patch) ;;
+    *"[fix]"* )             next_semver=$(git semver --next-patch) ;;
+    *"[bugfix]"* )          next_semver=$(git semver --next-patch) ;;
+  esac
+
+  if [[ "${next_semver}" == 'none' ]]; then
+    msg "No semantic keywords detected in commit log. Skipping release."
+    exit 0
+  else
+    g_new_tag="v${next_semver}"
+    echo "Parsing complete. Next version will be: ${g_new_tag}"
+  fi
+}
+
+# generate_changelog
+#
+# Generate the CHANGELOG.md file in the repository.
+#
+generate_changelog()
+{
+  if ! git-chglog \
+    --config "${GIT_CHGLOG_CONFIG:-.chglog/config.yml}" \
+    --output "CHANGELOG.md" \
+    --repository-url "${g_project_url}" \
+    --next-tag "${g_new_tag}"; then
+    die "ERROR: Could not generate CHANGELOG.md!"
+  fi
+}
+
+# commit_changelog
+#
+# Commit the changelog to source control.
+#
+commit_changelog()
+{
+  if ! git add CHANGELOG.md; then
+    die "ERROR: CHANGELOG.md could not be staged for commit!"
+  fi
+
+  g_commit_message_file="$(mktemp)"
+
+  echo -e "Release ${g_new_tag}\n\n[ci skip]" > "${g_commit_message_file}"
+
+  # Because the repo doesn't yet have $g_new_tag as a proper tag yet,
+  # we have to tell git-chglog to pretend it exists.
+  #
+  # This will then print the changelog for just $g_new_tag, which
+  # we can use in our commit message.
+  #
+  git-chglog \
+    --config "${GIT_CHGLOG_CONFIG:-.chglog/config.yml}" \
+    --repository-url "${g_project_url}" \
+    --next-tag "${g_new_tag}" \
+    "${g_new_tag}" \
+  | tail -n+4 >> "${g_commit_message_file}"
+
+  if ! git commit --file="${g_commit_message_file}"; then
+    die "ERROR: Failed to commit CHANGELOG.md!"
+  fi
+
+  if ! git push "${g_project_push_url}"; then
+    die "ERROR: Failed to push commit to remote repository!"
+  fi
+}
+
+# publish_release
+#
+# Publish release to GitHub.
+#
+# This function will fail if the release already exists.
+#
+publish_release()
+{
+  local github_user
+  local github_project
+
+  IFS='/' read -ra github_repo_parts <<< "${GITHUB_REPOSITORY}"
+  github_user=${github_repo_parts[0]}
+  github_project=${github_repo_parts[1]}
+
+  if ! ghr \
+    -token "${GH_API_TOKEN}" \
+    -username "${github_user}" \
+    -repository "${github_project}" \
+    -name "${g_new_tag}" \
+    -body "$(< "${g_commit_message_file}")" \
+    -soft \
+    "${g_new_tag}"; then
+    die "ERROR: Failed to publish GitHub release!"
+  fi
+}
+
+main
+

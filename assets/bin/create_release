@@ -44,7 +44,7 @@ main()
   check_environment
 
   g_project_url="https://github.com/${GITHUB_REPOSITORY}"
-  g_project_push_url="https://${GH_API_TOKEN}:@github.com/${GITHUB_REPOSITORY}.git"
+  g_project_push_url="https://${GITHUB_TOKEN}:@github.com/${GITHUB_REPOSITORY}.git"
 
   configure_git
   fetch_latest_tag
@@ -105,8 +105,8 @@ check_environment()
     die 'ERROR: Variable GITHUB_REPOSITORY is not set!'
   fi
 
-  if [ -z ${GH_API_TOKEN+x} ]; then
-    die 'ERROR: Variable GH_API_TOKEN is not set!'
+  if [ -z ${GITHUB_TOKEN+x} ]; then
+    die 'ERROR: Variable GITHUB_TOKEN is not set!'
   fi
 
   if [ -z ${GITHUB_SHA+x} ]; then
@@ -245,7 +245,7 @@ publish_release()
   github_project=${github_repo_parts[1]}
 
   if ! ghr \
-    -token "${GH_API_TOKEN}" \
+    -token "${GITHUB_TOKEN}" \
     -username "${github_user}" \
     -repository "${github_project}" \
     -name "${g_new_tag}" \

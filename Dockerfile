@@ -61,6 +61,6 @@ COPY --from=builder /root/go/bin/ghr /usr/bin/ghr
 COPY assets/bin/create_release /usr/bin/create_release
 COPY assets/chglog /opt/ssk/chglog
 
-USER 1000
+USER 1001
 CMD [ "/bin/bash" ]
 

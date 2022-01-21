@@ -52,12 +52,14 @@ LABEL org.label-schema.url="https://github.com/StoneSoupKitchen/container-github
 LABEL org.label-schema.vcs-url="https://github.com/StoneSoupKitchen/container-github-publisher"
 LABEL org.label-schema.vcs-ref=$GIT_REF
 
-RUN apk add --no-cache bash ca-certificates curl git make python3 py3-pip
+RUN apk add --no-cache bash ca-certificates curl git make python3 py3-pip \
+  && pip3 install git-semver \
+  && mkdir -p /opt/ssk/chglog
 
-RUN pip3 install git-semver
 COPY --from=builder /root/go/bin/git-chglog /usr/bin/git-chglog
 COPY --from=builder /root/go/bin/ghr /usr/bin/ghr
 COPY assets/bin/create_release /usr/bin/create_release
+COPY assets/chglog /opt/ssk/chglog
 
 USER 1000
 CMD [ "/bin/bash" ]

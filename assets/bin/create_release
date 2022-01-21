@@ -181,7 +181,7 @@ calculate_next_version()
 generate_changelog()
 {
   if ! git-chglog \
-    --config "${GIT_CHGLOG_CONFIG:-.chglog/config.yml}" \
+    --config "${GIT_CHGLOG_CONFIG:-/opt/ssk/chglog/config.yml}" \
     --output "CHANGELOG.md" \
     --repository-url "${g_project_url}" \
     --next-tag "${g_new_tag}"; then

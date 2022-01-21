@@ -210,7 +210,7 @@ commit_changelog()
   # we can use in our commit message.
   #
   git-chglog \
-    --config "${GIT_CHGLOG_CONFIG:-.chglog/config.yml}" \
+    --config "${GIT_CHGLOG_CONFIG:-/opt/ssk/chglog/config.yml}" \
     --repository-url "${g_project_url}" \
     --next-tag "${g_new_tag}" \
     "${g_new_tag}" \

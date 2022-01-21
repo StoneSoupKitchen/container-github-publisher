@@ -117,11 +117,11 @@ check_environment()
 configure_git()
 {
   msg 'Configuring git settings'
-  if ! git config --global user.email "${RELEASE_BOT_EMAIL:-noreply@github.com}"; then
+  if ! git config --global user.email "${GIT_EMAIL:-noreply@github.com}"; then
     die 'ERROR: Failed to configure git user.email!'
   fi
 
-  if ! git config --global user.name "${RELEASE_BOT_USER:-releasebot}"; then
+  if ! git config --global user.name "${GIT_USER:-releasebot}"; then
     die 'ERROR: Failed to configure git user.name!'
   fi
 }

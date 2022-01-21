@@ -1,8 +1,9 @@
+---
+bin: git
 style: github
 template: CHANGELOG.tpl.md
 info:
   title: CHANGELOG
-  repository_url: https://github.com/StoneSoupKitchen/container-github-publisher
 options:
   commits:
     # filters:

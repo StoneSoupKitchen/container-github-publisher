@@ -5,6 +5,7 @@ template: CHANGELOG.tpl.md
 info:
   title: CHANGELOG
 options:
+  tag_filter_pattern: '^v'
   commits:
     # filters:
     #   Type: []

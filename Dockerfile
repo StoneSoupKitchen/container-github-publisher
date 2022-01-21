@@ -60,5 +60,5 @@ COPY --from=builder /root/go/bin/ghr /usr/bin/ghr
 COPY assets/bin/create_release /usr/bin/create_release
 
 USER 1000
-ENTRYPOINT [ "/bin/bash" ]
+CMD [ "/bin/bash" ]
 

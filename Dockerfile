@@ -45,12 +45,12 @@ LABEL maintainer="joshua.ford@protonmail.com"
 ARG BUILD_DATE
 ARG GIT_REF
 
-LABEL org.label-schema.build-date=$BUILD_DATE
-LABEL org.label-schema.name="stonesoupkitchen/github-publisher"
-LABEL org.label-schema.description="Create and publish releases to GitHub"
-LABEL org.label-schema.url="https://github.com/StoneSoupKitchen/container-github-publisher"
-LABEL org.label-schema.vcs-url="https://github.com/StoneSoupKitchen/container-github-publisher"
-LABEL org.label-schema.vcs-ref=$GIT_REF
+LABEL org.opencontainers.image.created=$BUILD_DATE
+LABEL org.opencontainers.image.title="stonesoupkitchen/github-publisher"
+LABEL org.opencontainers.image.description="Create and publish releases to GitHub"
+LABEL org.opencontainers.image.url="https://github.com/stonesoupkitchen/container-github-publisher"
+LABEL org.opencontainers.image.source="https://github.com/stonesoupkitchen/container-github-publisher"
+LABEL org.opencontainers.image.revision=$GIT_REF
 
 RUN apk add --no-cache bash ca-certificates curl git make python3 py3-pip \
   && pip3 install git-semver \

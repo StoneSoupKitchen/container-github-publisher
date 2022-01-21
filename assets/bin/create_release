@@ -108,10 +108,6 @@ check_environment()
   if [ -z ${GITHUB_TOKEN+x} ]; then
     die 'ERROR: Variable GITHUB_TOKEN is not set!'
   fi
-
-  if [ -z ${GITHUB_SHA+x} ]; then
-    die 'ERROR: Variable GITHUB_SHA is not set!'
-  fi
 }
 
 # configure_git
@@ -152,7 +148,7 @@ calculate_next_version()
   local git_log
   local next_semver
 
-  current_sha="${GITHUB_SHA}"
+  current_sha="${GITHUB_SHA:-HEAD}"
   git_log="$(git log --format=%B "${g_latest_tag}..${current_sha}")"
   next_semver='none'
 

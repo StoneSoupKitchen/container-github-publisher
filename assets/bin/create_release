@@ -133,7 +133,7 @@ configure_git()
 fetch_latest_tag()
 {
   g_latest_tag="v$(git semver)"
-  if [[ -z "${g_latest_tag}" ]]; then
+  if [[ 'v' == "${g_latest_tag}" ]]; then
     die "ERROR: Unable to retrieve latest tag from git semver!'"
   fi
 }

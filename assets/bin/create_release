@@ -192,11 +192,10 @@ check_tag_existence()
 #
 generate_changelog()
 {
-  if ! git-chglog \
-    --config "${GIT_CHGLOG_CONFIG:-/opt/ssk/chglog/config.yml}" \
+  if ! git-cliff \
+    --config "${GIT_CLIFF_CONFIG:-/opt/ssk/git-cliff/cliff.toml}" \
     --output "CHANGELOG.md" \
-    --repository-url "${g_project_url}" \
-    --next-tag "${g_new_tag}"; then
+    --tag "${g_new_tag}"; then
     die "ERROR: Could not generate CHANGELOG.md!"
   fi
 }
@@ -213,20 +212,18 @@ commit_changelog()
 
   g_commit_message_file="$(mktemp)"
 
-  echo -e "Release ${g_new_tag}\n\n[ci skip]" > "${g_commit_message_file}"
+  echo -e "chore(release): Release ${g_new_tag}\n\n[ci skip]" > "${g_commit_message_file}"
 
   # Because the repo doesn't yet have $g_new_tag as a proper tag yet,
-  # we have to tell git-chglog to pretend it exists.
+  # we have to tell git-cliff to pretend it exists.
   #
   # This will then print the changelog for just $g_new_tag, which
   # we can use in our commit message.
   #
-  git-chglog \
-    --config "${GIT_CHGLOG_CONFIG:-/opt/ssk/chglog/config.yml}" \
-    --repository-url "${g_project_url}" \
-    --next-tag "${g_new_tag}" \
-    "${g_new_tag}" \
-  | tail -n+4 >> "${g_commit_message_file}"
+  git-cliff \
+    --config "${GIT_CLIFF_CONFIG:-/opt/ssk/git-cliff/cliff.toml}" \
+    --tag "${g_new_tag}" \
+  | tail -n+3 >> "${g_commit_message_file}"
 
   if ! git commit --file="${g_commit_message_file}"; then
     die "ERROR: Failed to commit CHANGELOG.md!"

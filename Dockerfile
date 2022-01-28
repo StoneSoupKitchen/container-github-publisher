@@ -32,8 +32,8 @@
 
 FROM alpine:3.15 as builder
 
-RUN apk add --update --no-cache go
-RUN go install github.com/git-chglog/git-chglog/cmd/git-chglog@latest \
+RUN apk add --update --no-cache go rust cargo
+RUN cargo install git-cliff \
   && go install github.com/tcnksm/ghr@latest
 
 #//////////////////////////////////////////////////////////////////////////////
@@ -54,12 +54,12 @@ LABEL org.opencontainers.image.revision=$GIT_REF
 
 RUN apk add --no-cache bash ca-certificates curl git make python3 py3-pip \
   && pip3 install git-semver \
-  && mkdir -p /opt/ssk/chglog
+  && mkdir -p /opt/ssk/git-cliff
 
-COPY --from=builder /root/go/bin/git-chglog /usr/bin/git-chglog
+COPY --from=builder /root/.cargo/bin/git-cliff /usr/bin/git-cliff
 COPY --from=builder /root/go/bin/ghr /usr/bin/ghr
 COPY assets/bin/create_release /usr/bin/create_release
-COPY assets/chglog /opt/ssk/chglog
+COPY assets/git-cliff /opt/ssk/git-cliff
 
 USER 1001
 CMD [ "/bin/bash" ]

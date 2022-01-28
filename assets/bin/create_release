@@ -65,7 +65,7 @@ cleanup()
 {
   trap - SIGINT SIGTERM ERR EXIT
 
-  if [ -z ${g_commit_message_file+x} ]; then
+  if [ -n "${g_commit_message_file+x}" ]; then
     rm -f "${g_commit_message_file}"
   fi
 }

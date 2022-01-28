@@ -226,7 +226,7 @@ commit_changelog()
     --config "${GIT_CLIFF_CONFIG:-/opt/ssk/git-cliff/cliff.toml}" \
     --unreleased \
     --tag "${g_new_tag}" \
-  | tail -n+3 >> "${g_commit_message_file}"
+  | tail -n+4 >> "${g_commit_message_file}"
 
   if ! git commit --file="${g_commit_message_file}"; then
     die "ERROR: Failed to commit CHANGELOG.md!"

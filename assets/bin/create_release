@@ -44,7 +44,13 @@ main()
   check_environment
 
   g_project_url="https://github.com/${GITHUB_REPOSITORY}"
+
+  # If GIT_USER is set, we attempt to use that to authenticate to
+  # the repository with GITHUB_TOKEN.
   g_project_push_url="https://${GITHUB_TOKEN}:@github.com/${GITHUB_REPOSITORY}.git"
+  if [ -n "${GIT_USER+x}" ]; then
+    g_project_push_url="https://${GIT_USER}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+  fi
 
   configure_git
   fetch_latest_tag

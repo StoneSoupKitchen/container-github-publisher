@@ -40,8 +40,8 @@ Environment variables:
 
 * **GIT_USER**: Username for the bot account that will update the CHANGELOG.
 * **GIT_EMAIL**: Email for the bot account that will update the CHANGELOG.
-* **GIT_CHGLOG_CONFIG**: Path to git-chglog config.yml. Defaults to
-  `/opt/ssk/chglog/config.yml`.
+* **GIT_CLIFF_CONFIG**: Path to git-cliff configuration file. Defaults to
+  `/opt/ssk/git-cliff/cliff.toml`.
 * **GITHUB_REPOSITORY**: String with format "<user>/<repo>". Automatically set
   by GitHub Actions. Required.
 * **GITHUB_TOKEN**: Personal Access Token for pushing release notes.

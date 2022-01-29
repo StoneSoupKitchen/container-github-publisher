@@ -222,11 +222,17 @@ commit_changelog()
   # This will then print the changelog for just $g_new_tag, which
   # we can use in our commit message.
   #
+  # By skipping the first six lines of the CHANGELOG,
+  # we skip the title of the release and the date. That information
+  # is already present in the GitHub release, so this makes the
+  # release notes look nice. This is subject to change if the
+  # changelog template ever changes.
+  #
   git-cliff \
     --config "${GIT_CLIFF_CONFIG:-/opt/ssk/git-cliff/cliff.toml}" \
     --unreleased \
     --tag "${g_new_tag}" \
-  | tail -n+4 >> "${g_commit_message_file}"
+  | tail -n+6 >> "${g_commit_message_file}"
 
   if ! git commit --file="${g_commit_message_file}"; then
     die "ERROR: Failed to commit CHANGELOG.md!"

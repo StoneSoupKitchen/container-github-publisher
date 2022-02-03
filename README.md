@@ -4,7 +4,7 @@ A container for publishing releases to GitHub.
 
 This container bundles together the following tools:
 * ghr
-* git-chglog
+* git-cliff
 * git-semver
 
 A helper script, `create_release`, is included to perform an automated release.

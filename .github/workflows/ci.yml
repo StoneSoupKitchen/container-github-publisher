@@ -40,6 +40,8 @@ jobs:
 
   release:
     name: Release
+    permissions:
+      packages: write
     needs: [Build]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest

@@ -17,7 +17,7 @@ jobs:
       security-events: write
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build the Docker image snapshot
       run: make build
     - name: Run Snyk to check Docker image for vulnerabilities
@@ -46,7 +46,7 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: docker/login-action@v1
       with:
         registry: ghcr.io

@@ -47,7 +47,7 @@ HADOLINT := hadolint
 IMAGE = $(REGISTRY)/$(IMAGE_NAMESPACE)/$(IMAGE_NAME)
 IMAGE_NAMESPACE := stonesoupkitchen
 IMAGE_NAME := github-publisher
-IMAGE_TAG := 0.3.0
+IMAGE_TAG := 0.3.1
 REGISTRY := ghcr.io
 SNAPSHOT_TAG = $(IMAGE_TAG)-SNAPSHOT-$(GIT_REF)
 

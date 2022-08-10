@@ -30,7 +30,7 @@
 #
 #/////////////////////////////////////////////////////////////////////////////#
 
-FROM alpine:3.16.1 as builder
+FROM alpine:3.16.2 as builder
 
 RUN apk add --update --no-cache go rust cargo
 RUN cargo install git-cliff \
@@ -38,7 +38,7 @@ RUN cargo install git-cliff \
 
 #//////////////////////////////////////////////////////////////////////////////
 
-FROM alpine:3.16.1
+FROM alpine:3.16.2
 LABEL maintainer="joshua.ford@protonmail.com"
 
 # Container metadata

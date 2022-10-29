@@ -45,7 +45,7 @@ jobs:
     permissions:
       packages: write
     needs: [Build]
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'push' && contains(github.ref, 'refs/tags'))
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3

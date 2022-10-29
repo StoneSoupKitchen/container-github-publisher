@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [ main ]
+    tags: ["v*"]
   pull_request:
     branches: [ main ]
   schedule:
@@ -18,25 +19,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Build the Docker image snapshot
+
+    - name: Build the Docker image
       run: make build
-    - name: Run Snyk to check Docker image for vulnerabilities
-      # Snyk can be used to break the build when it detects vulnerabilities.
-      # In this case we want to upload the issues to GitHub Code Scanning
+
+    - name: Run Trivy vulnerability scanner
       continue-on-error: true
-      uses: snyk/actions/docker@master
-      env:
-        # In order to use the Snyk Action you will need to have a Snyk API token.
-        # More details in https://github.com/snyk/actions#getting-your-snyk-token
-        # or you can signup for free at https://snyk.io/login
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      uses: aquasecurity/trivy-action@master
       with:
-        image: ghcr.io/stonesoupkitchen/github-publisher
-        args: --file=Dockerfile
-    - name: Upload result to GitHub Code Scanning
+        image-ref: ghcr.io/stonesoupkitchen/github-publisher:latest
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        exit-code: '1'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Upload scan results to GitHub Code Scanning
       uses: github/codeql-action/upload-sarif@v2
       with:
-        sarif_file: snyk.sarif
+        sarif_file: 'trivy-results.sarif'
 
   release:
     name: Release

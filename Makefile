@@ -29,74 +29,84 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 #/////////////////////////////////////////////////////////////////////////////#
+#
+# PREAMBLE
+#//////////////////////////////////////////////////////////////////////////////
+#
+MAKEFLAGS += --warn-undefined-variables
+SHELL := bash
+.SHELLFLAGS := -eu -o pipefail -c
+.DEFAULT_GOAL := help
+.DELETE_ON_ERROR:
+.SUFFIXES:
 
 # VARIABLES, CONFIG, & SETTINGS
 #//////////////////////////////////////////////////////////////////////////////
 #
-# BUILDER:         The path to the binary used to build and push the image.
-# HADOLINT:        The path to the hadolint binary.
-# IMAGE:           The fully-qualified name of the container.
-# IMAGE_NAMESPACE: The leading namespace of the container image.
-# IMAGE_NAME:      The name of the container image.
-# IMAGE_TAG:       The release tag of the built container image.
-# REGISTRY:        The Docker registry to which to push the built image.
-# SNAPSHOT_TAG:    A temporary tag for containers staged for release.
-#
-BUILDER := docker
-HADOLINT := hadolint
-IMAGE = $(REGISTRY)/$(IMAGE_NAMESPACE)/$(IMAGE_NAME)
-IMAGE_NAMESPACE := stonesoupkitchen
-IMAGE_NAME := github-publisher
-IMAGE_TAG := 0.3.1
 REGISTRY := ghcr.io
-SNAPSHOT_TAG = $(IMAGE_TAG)-SNAPSHOT-$(GIT_REF)
+REPOSITORY := stonesoupkitchen/github-publisher
 
-# Arguments used to pass to the BUILDER when making containers.
-#
-# BUILD_DATE: The build date of the container in RFC 3339 format.
-# GIT_REF:    The current Git commit sha1 of the repository.
-#
-BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-GIT_REF = $(shell git rev-parse --verify HEAD)
+DATE       = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+GIT_COMMIT = $(shell git rev-parse HEAD)
+GIT_SHA    = $(shell git rev-parse --short HEAD)
+GIT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
+GIT_TAG    = $(shell git describe --tags --abbrev=0 --exact-match 2>/dev/null)
+
+VERSION ?= ${GIT_TAG}
+
+LABELS :=
+LABELS += --label maintainer=joshua.ford@proton.me
+LABELS += --label org.opencontainers.image.created=$(DATE)
+LABELS += --label org.opencontainers.image.title="stonesoupkitchen/github-publisher"
+LABELS += --label org.opencontainers.image.description="Create and publish releases to GitHub"
+LABELS += --label org.opencontainers.image.url="https://github.com/stonesoupkitchen/container-github-publisher"
+LABELS += --label org.opencontainers.image.source="https://github.com/stonesoupkitchen/container-github-publisher"
+LABELS += --label org.opencontainers.image.revision=$(GIT_COMMIT)
+
+TAGS :=
+TAGS += -t $(REGISTRY)/$(REPOSITORY):latest
+TAGS += -t $(REGISTRY)/$(REPOSITORY):sha-${GIT_SHA}
+ifneq ($(VERSION),)
+	TAGS += -t $(REGISTRY)/$(REPOSITORY):${VERSION}
+endif
 
 # Helper variable to identify all images built by our container builder.
 # Used in the `clean` target to remove all build artifacts.
 #
-CACHE = $(shell $(BUILDER) images --format '{{.Repository}}:{{.Tag}}' | \
-   	grep "$(IMAGE_NAMESPACE)/$(IMAGE_NAME)")
-
+CACHE = $(shell docker images --format '{{.Repository}}:{{.Tag}}' | \
+   	grep "$(REGISTRY)/$(REPOSITORY)")
 
 # TASKS
 #//////////////////////////////////////////////////////////////////////////////
-
-.DEFAULT_GOAL := help
-
-.PHONY: hadolint
-hadolint: ## Run hadolint.
-	@$(HADOLINT) Dockerfile
-
-.PHONY: build
-build: ## Build the container.
-	$(BUILDER) build \
-		--build-arg BUILD_DATE=$(BUILD_DATE) \
-		--build-arg GIT_REF=$(GIT_REF) \
-		-t $(IMAGE):$(SNAPSHOT_TAG) .
-
-.PHONY: release
-release: build ## Release the container to a public registry.
-	$(BUILDER) tag $(IMAGE):$(SNAPSHOT_TAG) $(IMAGE):$(IMAGE_TAG)
-	$(BUILDER) tag $(IMAGE):$(SNAPSHOT_TAG) $(IMAGE):latest
-	$(BUILDER) push $(IMAGE):$(IMAGE_TAG)
-	$(BUILDER) push $(IMAGE):latest
-
-.PHONY: clean
-clean: ## Remove the built Docker image and its layers.
-	$(BUILDER) rmi $(CACHE)
-
+#
 .PHONY: help
 help: ## Show this help message.
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+	@grep -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| sort \
 		| awk 'BEGIN {FS = ":.*?## "; printf "\nUsage:\n"}; {printf "  %-15s %s\n", $$1, $$2}'
 	@echo
+
+.PHONY: clean
+clean: ## Remove the built Docker image and its layers.
+	@echo
+	@echo "==> Removing stale images <=="
+	docker rmi $(CACHE)
+
+.PHONY: lint
+lint: ## Run hadolint.
+	@echo
+	@echo "==> Running hadolint <=="
+	@hadolint Dockerfile
+
+.PHONY: build
+build: ## Build the container.
+	@echo
+	@echo "==> Building container <=="
+	@docker build ${TAGS} ${LABELS} .
+
+.PHONY: release
+release: build ## Release the container to a public registry.
+	@echo
+	@echo "==> Pushing container to registry <=="
+	@docker image push --all-tags $(REGISTRY)/$(REPOSITORY)
 

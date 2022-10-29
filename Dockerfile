@@ -33,27 +33,17 @@
 FROM alpine:3.16.2 as builder
 
 RUN apk add --update --no-cache go rust cargo
-RUN cargo install git-cliff \
+RUN set -x \
+  && cargo install git-cliff \
   && go install github.com/tcnksm/ghr@latest
 
 #//////////////////////////////////////////////////////////////////////////////
 
 FROM alpine:3.16.2
-LABEL maintainer="joshua.ford@protonmail.com"
 
-# Container metadata
-ARG BUILD_DATE
-ARG GIT_REF
-
-LABEL org.opencontainers.image.created=$BUILD_DATE
-LABEL org.opencontainers.image.title="stonesoupkitchen/github-publisher"
-LABEL org.opencontainers.image.description="Create and publish releases to GitHub"
-LABEL org.opencontainers.image.url="https://github.com/stonesoupkitchen/container-github-publisher"
-LABEL org.opencontainers.image.source="https://github.com/stonesoupkitchen/container-github-publisher"
-LABEL org.opencontainers.image.revision=$GIT_REF
-
-RUN apk add --no-cache bash ca-certificates curl git make python3 py3-pip \
-  && pip3 install git-semver \
+RUN set -x \
+  && apk add --no-cache bash ca-certificates curl git make python3 py3-pip \
+  && pip3 install --no-cache-dir git-semver \
   && mkdir -p /opt/ssk/git-cliff
 
 COPY --from=builder /root/.cargo/bin/git-cliff /usr/bin/git-cliff

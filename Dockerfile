@@ -30,7 +30,7 @@
 #
 #/////////////////////////////////////////////////////////////////////////////#
 
-FROM alpine:3.16.2 as builder
+FROM alpine:3.17.0 as builder
 
 RUN apk add --update --no-cache go rust cargo
 RUN set -x \
@@ -39,7 +39,7 @@ RUN set -x \
 
 #//////////////////////////////////////////////////////////////////////////////
 
-FROM alpine:3.16.2
+FROM alpine:3.17.0
 
 RUN set -x \
   && apk add --no-cache bash ca-certificates curl git make python3 py3-pip \
